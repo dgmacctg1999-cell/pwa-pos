@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+
+
+<div class="card">
+<h3>New Sale</h3>
+<input id="saleCustomer" placeholder="Customer Name" /><br><br>
+<input id="saleAmount" placeholder="Amount" type="number" /><br><br>
+<button class="btn" onclick="submitSale()">Submit Sale</button>
+<p id="saleStatus"></p>
+</div>
+
+
+<button id="installBtn" class="btn" style="display:none; background:#26a65b;">Install App</button>
+
+
+</div>
+
+
+<script>
+// Install PWA
+let deferredPrompt;
+const installBtn = document.getElementById("installBtn");
+
+
+window.addEventListener("beforeinstallprompt", (e) => {
+e.preventDefault();
+deferredPrompt = e;
+installBtn.style.display = "block";
+});
+
+
+installBtn.addEventListener("click", async () => {
+installBtn.style.display = "none";
+deferredPrompt.prompt();
+await deferredPrompt.userChoice;
+deferredPrompt = null;
+});
+
+
+// Submit Sale to Apps Script API
+async function submitSale() {
+const customer = document.getElementById("saleCustomer").value;
+const amount = document.getElementById("saleAmount").value;
+const status = document.getElementById("saleStatus");
+
+
+status.innerText = "Submitting...";
+
+
+try {
+const response = await fetch("https://script.google.com/macros/s/AKfycbwAW2WAk3fZLTF2GCoEj-iwCdFYjZsL7sj1Mkh8boYQ3PD7wETY75MUk8MkJUsxIHJ4/exec", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ action: "addSale", customer, amount })
+});
+
+
+const data = await response.json();
+status.innerText = data.message || "Success!";
+} catch (err) {
+status.innerText = "Saved offline. Will sync later.";
+
+
+// Save offline
+const pending = JSON.parse(localStorage.getItem("pendingSales") || "[]");
+pending.push({ customer, amount });
+localStorage.setItem("pendingSales", JSON.stringify(pending));
+}
+}
+</script>
+
+
+<script>
+// Register service worker
+if ("serviceWorker" in navigator) {
+navigator.serviceWorker.register("sw.js");
+}
+</script>
+</body>
+</html>
+
