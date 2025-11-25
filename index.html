@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Digma's — Login</title>
+<link rel="manifest" href="manifest.json" />
+<style>
+  :root {
+    --panel-bg: rgba(64,67,70,0.85);
+    --panel-shadow: rgba(0,0,0,0.25);
+    --accent: #f2f2f2;
+  }
+  html,body{height:100%;margin:0;font-family: 'Segoe UI', Arial, sans-serif;}
+  body{
+    /* using your uploaded image path below — replace when you host */
+    background-image: url("bg.jpg");
+    background-size: cover;
+    background-position: center;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+  }
+
+  /* center column logo + card */
+  .center-wrap {
+    width: 100%;
+    max-width: 980px;
+    margin-top: 40px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap: 28px;
+  }
+
+  .brand {
+    width:220px;
+    height:auto;
+    object-fit:contain;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.25));
+  }
+
+  .login-card {
+    width: 520px;
+    max-width: calc(100% - 40px);
+    background: var(--panel-bg);
+    color: var(--accent);
+    border-radius: 12px;
+    padding: 28px 30px;
+    box-shadow: 0 10px 30px var(--panel-shadow);
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .login-title {
+    text-align:center;
+    font-size:34px;
+    font-weight:700;
+    letter-spacing: 0.6px;
+    margin-bottom:6px;
+  }
+
+  .field {
+    background: rgba(255,255,255,0.03);
+    border-radius:26px;
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .field input{
+    flex:1;
+    background:transparent;
+    border:0;
+    outline:none;
+    color: #fff;
+    font-size:16px;
+    padding:10px 6px;
+  }
+
+  .row {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+  }
+
+  .small {
+    color: rgba(255,255,255,0.75);
+    font-size:13px;
+  }
+
+  .login-btn {
+    margin-top:10px;
+    width:100%;
+    background: rgba(0,0,0,0.18);
+    color:#fff;
+    border:0;
+    padding:14px;
+    border-radius:30px;
+    font-weight:700;
+    cursor:pointer;
+    letter-spacing:1px;
+    box-shadow: inset 0 -4px 8px rgba(0,0,0,0.12);
+  }
+
+  .login-footer {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:6px;
+  }
+
+  label.remember { display:flex; gap:8px; align-items:center; font-size:13px; color:rgba(255,255,255,0.85); }
+
+  .forgot { color: #e7e7e7; font-size:13px; text-decoration: underline; cursor:pointer; }
+
+  /* small responsive tweaks */
+  @media (max-width:600px){
+    .login-card{ width:92%; padding:20px;}
+    .brand{ width:160px; }
+  }
+</style>
+</head>
+<body>
+  <div class="center-wrap">
+    <!-- Logo: replace src with your logo file or keep as is -->
+    <img src="logo.png" alt="Digma's" class="brand" />
+
+    <div class="login-card" role="form" aria-labelledby="login-title">
+      <div id="login-title" class="login-title">Login</div>
+
+      <div class="field" title="username">
+        <input id="username" placeholder="Username or Email" autocomplete="username" />
+      </div>
+
+      <div class="field" title="password">
+        <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+      </div>
+
+      <div class="row">
+        <label class="remember"><input id="remember" type="checkbox" /> Remember me</label>
+        <div class="forgot" onclick="forgotPassword()">Forgot Password?</div>
+      </div>
+
+      <button class="login-btn" id="loginBtn">LOGIN</button>
+
+      <div id="message" class="small" style="text-align:center; margin-top:6px;"></div>
+    </div>
+  </div>
+
+<script>
+  // Replace with YOUR Apps Script exec URL (Web app /exec). Set when deployed.
+  const API_URL = "https://script.google.com/macros/s/AKfycbzBV5P0P7hVkO6nXDXwytjithPSgVkcEQ635VLlagpaBoDkGfyXiDIPpkNe87s9lfXF/exec";
+
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  document.getElementById('password').addEventListener('keyup', (e)=>{ if(e.key==='Enter') doLogin(); });
+
+  function forgotPassword(){
+    alert('Please contact admin to reset your password.');
+  }
+
+  async function doLogin(){
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value;
+
+    const msg = document.getElementById('message');
+    msg.innerText = '';
+
+    if(!u || !p){ msg.innerText = 'Please enter username and password.'; return; }
+
+    // Show a simple loading text
+    msg.innerText = 'Signing in...';
+
+    // POST to Apps Script API
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', data: { username: u, password: p } })
+      });
+      const j = await res.json();
+
+      if(j.status === 'success' && j.user){
+        // store session (localStorage)
+        const remember = document.getElementById('remember').checked;
+        const payload = { user: j.user, ts: (new Date()).toISOString() };
+        if(remember){
+          localStorage.setItem('pos_user', JSON.stringify(payload));
+        } else {
+          sessionStorage.setItem('pos_user', JSON.stringify(payload));
+        }
+        msg.innerText = 'Login successful — redirecting…';
+        // redirect to dashboard (separate page)
+        setTimeout(()=> window.location.href = 'dashboard.html', 600);
+      } else {
+        msg.innerText = j.message || 'Login failed. Check your credentials.';
+      }
+    } catch (err) {
+      console.error(err);
+      msg.innerText = 'Network error. Are you online?';
+    }
+  }
+</script>
+</body>
+</html>
